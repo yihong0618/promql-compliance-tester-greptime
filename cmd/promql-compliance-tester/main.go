@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -101,15 +102,60 @@ func main() {
 
 	progressBar := pb.StartNew(len(expandedTestCases))
 	results := make([]*comparer.Result, 0, len(cfg.TestCases))
+	var errors []error
+	var failedQueries []string
 	for _, tc := range expandedTestCases {
 		res, err := comp.Compare(tc)
 		if err != nil {
-			log.Fatalf("Error running comparison: %v", err)
+			log.Errorf("Error running comparison: %v", err)
+			errors = append(errors, err)
+			failedQueries = append(failedQueries, tc.Query)
+		} else {
+			results = append(results, res)
 		}
 		progressBar.Increment()
-		results = append(results, res)
 	}
 	progressBar.Finish()
+
+	totalTests := len(expandedTestCases)
+	successfulTests := len(results)
+	errorCount := len(errors)
+	successRate := float64(successfulTests) / float64(totalTests) * 100
+	errorRate := float64(errorCount) / float64(totalTests) * 100
+
+	log.Infof("Test execution summary:")
+	log.Infof("  Total test cases: %d", totalTests)
+	log.Infof("  Successful: %d (%.2f%%)", successfulTests, successRate)
+	log.Infof("  Failed: %d (%.2f%%)", errorCount, errorRate)
+
+	if len(errors) > 0 {
+		log.Errorf("Found %d error(s) during test execution:", len(errors))
+		for i, err := range errors {
+			log.Errorf("  Error %d: %v", i+1, err)
+		}
+
+		log.Errorf("")
+		log.Errorf("Failed queries summary:")
+		log.Errorf("===================")
+		for i, query := range failedQueries {
+			log.Errorf("%d. %s", i+1, query)
+		}
+		log.Errorf("")
+		log.Errorf("Complete PromQL queries that failed (copy-paste ready):")
+		log.Errorf("=====================================================")
+		for _, query := range failedQueries {
+			log.Errorf("%s", query)
+		}
+
+		// 同时输出到标准输出，便于复制
+		fmt.Printf("\n\n=== FAILED PROMQL QUERIES (Copy-paste ready) ===\n")
+		for _, query := range failedQueries {
+			fmt.Printf("%s\n", query)
+		}
+		fmt.Printf("=== END OF FAILED QUERIES ===\n\n")
+
+		log.Fatalf("Test execution completed with %d error(s) - Error rate: %.2f%%", len(errors), errorRate)
+	}
 
 	outp(results, *outputPassing, cfg.QueryTweaks)
 }

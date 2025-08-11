@@ -1,5 +1,5 @@
 reference_target_config:
-  query_url: 'http://localhost:9090'
+  query_url: 'http://127.0.0.1:4000/v1/prometheus/'
 
 test_target_config:
   # UNCOMMENT FOR GRAFANA CLOUD:
