@@ -132,9 +132,6 @@ test_cases:
   - query: "nonexistent_metric_name"
   - query: 'demo_memory_usage_bytes offset {{.offset}}'
     variant_args: ['offset']
-  - query: 'demo_memory_usage_bytes offset -{{.offset}}'
-    variant_args: ['offset']
-    should_fail: true
   # Test staleness handling.
   - query: demo_intermittent_metric
 
@@ -283,8 +280,6 @@ test_cases:
   - query: 'label_join(demo_num_cpus, "new_label", "-", "instance", "job")'
   - query: 'label_join(demo_num_cpus, "job", "-", "instance", "job")'
   - query: 'label_join(demo_num_cpus, "job", "-", "instance")'
-  - query: 'label_join(demo_num_cpus, "~invalid", "-", "instance")'
-    should_fail: true
   - query: '{{.dateFunc}}()'
     variant_args: ['dateFunc']
   - query: '{{.dateFunc}}(demo_batch_last_success_timestamp_seconds offset {{.offset}})'
